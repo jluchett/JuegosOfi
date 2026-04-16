@@ -7,6 +7,38 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- ELEMENTOS DE AUDIO -->
+    <audio id="sonido-union" preload="auto">
+        <source src="/sounds/union.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-sala-lista" preload="auto">
+        <source src="/sounds/salalista.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-inicio-juego" preload="auto">
+        <source src="/sounds/inicio.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-bomba-tick" preload="auto">
+        <source src="/sounds/tictac.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-explosion" preload="auto">
+        <source src="/sounds/explosion.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-semaforo-verde" preload="auto">
+        <source src="/sounds/verde.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-victoria" preload="auto">
+        <source src="/sounds/victoria.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-derrota" preload="auto">
+        <source src="/sounds/derrota.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-voto" preload="auto">
+        <source src="/sounds/voto.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="sonido-clic" preload="auto">
+        <source src="/sounds/click.mp3" type="audio/mpeg">
+    </audio>
+
     <div id="pantalla-login">
         <h1>Juegos del Hambre: Edición Oficina</h1>
         <input type="text" id="nombreInput" placeholder="Tu nombre...">
@@ -26,6 +58,16 @@
             <button onclick="lanzarBomba()" style="margin-bottom: 15px;">💣 Jugar: La Bomba de Tiempo</button>
             <button onclick="lanzarSemaforo()" style="margin-bottom: 15px; background-color: #e1b12c;">🚦 Jugar: El Semáforo</button>
             <button onclick="lanzarImpostor()" style="margin-bottom: 15px; background-color: #8e44ad;">🕵️ Jugar: El Impostor</button>
+            
+            <!-- Control de volumen -->
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #3d3d5c;">
+                <label style="color: #a5a5b4; font-size: 14px;">🔊 Volumen</label>
+                <input type="range" id="control-volumen" min="0" max="1" step="0.1" value="0.5" 
+                       onchange="ajustarVolumen(this.value)" style="width: 100%; margin-top: 5px;">
+                <button onclick="toggleMute()" id="btn-mute" style="font-size: 14px; padding: 8px; margin-top: 5px; background-color: #3d3d5c;">
+                    🔇 Silenciar
+                </button>
+            </div>
         </div>
     </div>
 

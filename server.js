@@ -7,6 +7,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static('public'));
+app.use('/sounds', express.static('sounds')); // 🎵 AÑADE ESTA LÍNEA
 
 let jugadores = {}; 
 let jugadoresJugando = {}; 

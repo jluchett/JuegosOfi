@@ -1,5 +1,83 @@
 const socket = io();
 
+// --- SISTEMA DE SONIDO ---
+const sonidos = {
+    union: document.getElementById('sonido-union'),
+    salalista: document.getElementById('sonido-sala-lista'),
+    inicioJuego: document.getElementById('sonido-inicio-juego'),
+    bombaTick: document.getElementById('sonido-bomba-tick'),
+    explosion: document.getElementById('sonido-explosion'),
+    semaforoVerde: document.getElementById('sonido-semaforo-verde'),
+    victoria: document.getElementById('sonido-victoria'),
+    derrota: document.getElementById('sonido-derrota'),
+    voto: document.getElementById('sonido-voto'),
+    clic: document.getElementById('sonido-clic')
+};
+
+let volumenGlobal = 0.5;
+let muteado = false;
+
+function ajustarVolumen(valor) {
+    volumenGlobal = parseFloat(valor);
+    if (!muteado) {
+        Object.values(sonidos).forEach(s => { if (s) s.volume = volumenGlobal; });
+    }
+}
+
+function toggleMute() {
+    muteado = !muteado;
+    const btn = document.getElementById('btn-mute');
+    Object.values(sonidos).forEach(s => { 
+        if (s) s.volume = muteado ? 0 : volumenGlobal; 
+    });
+    btn.innerText = muteado ? '🔊 Activar Sonido' : '🔇 Silenciar';
+}
+
+function reproducirSonido(tipo, volumenPersonalizado = 1) {
+    if (muteado) return;
+    const sonido = sonidos[tipo];
+    if (sonido) {
+        sonido.volume = volumenGlobal * volumenPersonalizado;
+        sonido.currentTime = 0;
+        sonido.play().catch(e => console.log('Error reproduciendo sonido:', e));
+    }
+}
+
+function detenerSonido(tipo) {
+    const sonido = sonidos[tipo];
+    if (sonido) {
+        sonido.pause();
+        sonido.currentTime = 0;
+    }
+}
+
+// 🎵 NUEVA FUNCIÓN: Reproducir en bucle
+function reproducirSonidoLoop(tipo, volumenPersonalizado = 1) {
+    if (muteado) return;
+    const sonido = sonidos[tipo];
+    if (sonido) {
+        sonido.volume = volumenGlobal * volumenPersonalizado;
+        sonido.loop = true;
+        sonido.currentTime = 0;
+        sonido.play().catch(e => console.log('Error reproduciendo sonido en loop:', e));
+    }
+}
+
+// 🎵 NUEVA FUNCIÓN: Detener bucle
+function detenerSonidoLoop(tipo) {
+    const sonido = sonidos[tipo];
+    if (sonido) {
+        sonido.loop = false;
+        sonido.pause();
+        sonido.currentTime = 0;
+    }
+}
+
+// Inicializar volumen
+setTimeout(() => {
+    Object.values(sonidos).forEach(s => { if (s) s.volume = volumenGlobal; });
+}, 100);
+
 // ESTA ES LA CLAVE: El candado que protege la pantalla de login
 let jugadorRegistrado = false;
 
@@ -7,17 +85,18 @@ let jugadorRegistrado = false;
 function unirse() {
     const nombre = document.getElementById('nombreInput').value.trim();
     if (nombre) {
+        reproducirSonido('clic');
         socket.emit('unirse_al_juego', nombre);
     }
 }
 
 // Escuchamos la respuesta del servidor
 socket.on('ingreso_exitoso', (estado) => {
-    jugadorRegistrado = true; // ¡ABRIMOS EL CANDADO! Ya es parte del sistema
+    jugadorRegistrado = true;
+    reproducirSonido('union');
     document.getElementById('pantalla-login').style.display = 'none';
     
     if (estado.juegoEnCurso) {
-        // MODO ESPECTADOR: Si hay un juego, lo mandamos a una pantalla de espera especial
         const zonaJuego = document.getElementById('pantalla-juego');
         zonaJuego.style.display = 'block';
         zonaJuego.innerHTML = `
@@ -25,12 +104,12 @@ socket.on('ingreso_exitoso', (estado) => {
             <p style="color: #a5a5b4; margin-top: 20px;">Tus compañeros están sudando en este momento. Espera a que termine la ronda para unirte.</p>
         `;
     } else {
-        // MODO NORMAL: Va al lobby
         document.getElementById('pantalla-lobby').style.display = 'block';
     }
 });
 
 socket.on('error_nombre', (mensaje) => {
+    reproducirSonido('derrota', 0.5);
     alert(mensaje); 
     const input = document.getElementById('nombreInput');
     input.value = ''; 
@@ -38,7 +117,7 @@ socket.on('error_nombre', (mensaje) => {
 });
 
 socket.on('actualizar_lobby', (nombres) => {
-    if (!jugadorRegistrado) return; // Ignora si está en login
+    if (!jugadorRegistrado) return;
     const lista = document.getElementById('lista-jugadores');
     lista.innerHTML = '';
     nombres.forEach(nombre => {
@@ -50,30 +129,49 @@ socket.on('actualizar_lobby', (nombres) => {
 
 // Manejo dinámico de la sala (Mínimo 3 jugadores)
 socket.on('sala_lista', () => {
-    if (!jugadorRegistrado) return; // Ignora si está en login
+    if (!jugadorRegistrado) return;
+    // Detener cualquier reproducción anterior
+    detenerSonidoLoop('salalista');
+    // Iniciar reproducción en bucle
+    reproducirSonidoLoop('salalista');
     document.getElementById('panel-control').style.display = 'block';
     document.getElementById('mensaje-espera').style.display = 'none';
 });
 
 socket.on('sala_espera', () => {
-    if (!jugadorRegistrado) return; // Ignora si está en login
+    if (!jugadorRegistrado) return;
+
+     // 🎵 DETENER EL BUCLE cuando la sala ya no está lista
+    detenerSonidoLoop('salalista');
+    
     document.getElementById('panel-control').style.display = 'none';
     const mensajeEspera = document.getElementById('mensaje-espera');
     if(mensajeEspera) mensajeEspera.style.display = 'block';
 });
 
-
-
 // --- PANEL DE CONTROL ---
-function lanzarBomba() { socket.emit('lanzar_bomba'); }
-function lanzarSemaforo() { socket.emit('lanzar_semaforo'); }
-function lanzarImpostor() { socket.emit('lanzar_impostor'); }
-function volverAlLobby() { socket.emit('regresar_lobby_global'); }
+function lanzarBomba() { 
+    reproducirSonido('inicioJuego');
+    socket.emit('lanzar_bomba'); 
+}
+function lanzarSemaforo() { 
+    reproducirSonido('inicioJuego');
+    socket.emit('lanzar_semaforo'); 
+}
+function lanzarImpostor() { 
+    reproducirSonido('inicioJuego');
+    socket.emit('lanzar_impostor'); 
+}
+function volverAlLobby() { 
+    reproducirSonido('clic');
+    socket.emit('regresar_lobby_global'); 
+}
 
 // --- ERROR GLOBAL ---
 socket.on('error_juego', (mensaje) => {
-    // Detenemos cualquier intervalo activo (como el de la bomba)
+    reproducirSonido('derrota');
     if (intervaloBomba) clearInterval(intervaloBomba);
+    detenerSonido('bombaTick');
 
     const zonaJuego = document.getElementById('pantalla-juego');
     zonaJuego.innerHTML = `
@@ -81,14 +179,13 @@ socket.on('error_juego', (mensaje) => {
         <p style="margin: 20px 0;">${mensaje}</p>
     `;
     
-    // Devolvemos al lobby tras 4 segundos para que puedan leer el motivo
     setTimeout(() => {
         volverAlLobby();
     }, 4000);
 });
 
 socket.on('mostrar_lobby', () => {
-    if (!jugadorRegistrado) return; // Ignora si está en login
+    if (!jugadorRegistrado) return;
     document.getElementById('pantalla-juego').style.display = 'none';
     document.getElementById('pantalla-juego').innerHTML = ''; 
     document.getElementById('pantalla-lobby').style.display = 'block';
@@ -99,11 +196,13 @@ function generarBotonVolver() {
     return `<br><button onclick="volverAlLobby()" style="margin-top: 30px; background-color: #3d3d5c;">Volver al Panel</button>`;
 }
 
-// --- JUEGO 1: LA BOMBA (Modificado) ---
+// --- JUEGO 1: LA BOMBA ---
 let intervaloBomba;
 
 socket.on('iniciar_juego_bomba', () => {
-    if (!jugadorRegistrado) return; // PROTECCIÓN: Si no ha entrado, ignora la bomba
+    if (!jugadorRegistrado) return;
+    reproducirSonido('inicioJuego');
+    
     document.getElementById('pantalla-lobby').style.display = 'none';
     const zonaJuego = document.getElementById('pantalla-juego');
     zonaJuego.style.display = 'block';
@@ -117,7 +216,9 @@ socket.on('iniciar_juego_bomba', () => {
         <p style="color: #a5a5b4;">Alguien será elegido al azar...</p>
     `;
 
-    // Animación del contador en el cliente
+    // Sonido de tick inicial
+    reproducirSonido('bombaTick', 0.6);
+
     intervaloBomba = setInterval(() => {
         contador--;
         const contElement = document.getElementById('contador-bomba');
@@ -126,28 +227,44 @@ socket.on('iniciar_juego_bomba', () => {
             contElement.style.transform = 'scale(1.3)';
             setTimeout(() => contElement.style.transform = 'scale(1)', 150);
         }
-        if (contador <= 0) clearInterval(intervaloBomba);
+        
+        // Sonido de tick en cada segundo
+        if (contador > 0) {
+            reproducirSonido('bombaTick', 0.6);
+        }
+        
+        if (contador <= 0) {
+            clearInterval(intervaloBomba);
+            detenerSonido('bombaTick');
+        }
     }, 1000);
 });
 
 socket.on('fin_juego_bomba', (nombrePerdedor) => {
-    if (!jugadorRegistrado) return; // Ignora si está en login
-    clearInterval(intervaloBomba); // Limpia el intervalo por si acaso
+    if (!jugadorRegistrado) return;
+    clearInterval(intervaloBomba);
+    detenerSonido('bombaTick');
+    reproducirSonido('explosion');
+    
     const zonaJuego = document.getElementById('pantalla-juego');
     const miNombre = document.getElementById('nombreInput').value;
 
     if (miNombre === nombrePerdedor) {
         zonaJuego.innerHTML = `<h1 style="color: #ff4757; font-size: 50px;">¡BOOOM!</h1><h2>¡Explotaste, ${nombrePerdedor}!</h2>`;
         document.body.style.backgroundColor = "#ff4757"; 
+        reproducirSonido('derrota');
     } else {
         zonaJuego.innerHTML = `<h1 style="color: #2ed573;">¡Te salvaste!</h1><h2>Explotó: <span style="color:#ff4757;">${nombrePerdedor}</span></h2>`;
+        reproducirSonido('victoria');
     }
     setTimeout(() => zonaJuego.innerHTML += generarBotonVolver(), 3000);
 });
 
 // --- JUEGO 2: EL SEMÁFORO ---
 socket.on('preparar_semaforo', () => {
-    if (!jugadorRegistrado) return; // PROTECCIÓN: Si no ha entrado, ignora el semáforo
+    if (!jugadorRegistrado) return;
+    reproducirSonido('inicioJuego');
+    
     document.getElementById('pantalla-lobby').style.display = 'none';
     const zonaJuego = document.getElementById('pantalla-juego');
     zonaJuego.style.display = 'block';
@@ -160,7 +277,9 @@ socket.on('preparar_semaforo', () => {
 });
 
 socket.on('semaforo_verde', () => {
-    if (!jugadorRegistrado) return; // PROTECCIÓN: Si no ha entrado, ignora el semáforo
+    if (!jugadorRegistrado) return;
+    reproducirSonido('semaforoVerde');
+    
     const caja = document.getElementById('caja-semaforo');
     if(caja) {
         caja.classList.add('semaforo-verde');
@@ -169,6 +288,7 @@ socket.on('semaforo_verde', () => {
 });
 
 function presionarSemaforo() {
+    reproducirSonido('clic');
     socket.emit('clic_semaforo');
     const caja = document.getElementById('caja-semaforo');
     if(caja) {
@@ -178,22 +298,25 @@ function presionarSemaforo() {
 }
 
 socket.on('fin_juego_semaforo', (datos) => {
-    if (!jugadorRegistrado) return; // Ignora si está en login
+    if (!jugadorRegistrado) return;
     const zonaJuego = document.getElementById('pantalla-juego');
     const miNombre = document.getElementById('nombreInput').value;
 
     if (miNombre === datos.perdedor) {
         zonaJuego.innerHTML = `<h1 style="color: #ff4757; font-size: 50px;">¡FUISTE EL MÁS LENTO!</h1><h2>Tiempo: ${datos.tiempo}</h2>`;
         document.body.style.backgroundColor = "#ff4757"; 
+        reproducirSonido('derrota');
     } else {
         zonaJuego.innerHTML = `<h1 style="color: #2ed573;">¡Qué reflejos!</h1><h2>Perdedor: <span style="color:#ff4757;">${datos.perdedor}</span></h2><p>Tiempo: ${datos.tiempo}</p>`;
+        reproducirSonido('victoria');
     }
     setTimeout(() => zonaJuego.innerHTML += generarBotonVolver(), 3000);
 });
 
 // --- JUEGO 3: EL IMPOSTOR ---
 socket.on('iniciar_juego_impostor', (datos) => {
-    if (!jugadorRegistrado) return; 
+    if (!jugadorRegistrado) return;
+    reproducirSonido('inicioJuego');
 
     document.getElementById('pantalla-lobby').style.display = 'none';
     const zonaJuego = document.getElementById('pantalla-juego');
@@ -205,7 +328,6 @@ socket.on('iniciar_juego_impostor', (datos) => {
     let botonesVoto = "";
     for (let id in datos.listaJugadores) {
         if (id !== datos.miId) {
-            // 🚨 MEJORA: Le damos un ID único a cada botón para poder buscarlo después
             botonesVoto += `<button id="btn-${id}" class="btn-voto" onclick="enviarVoto('${id}')">Votar por ${datos.listaJugadores[id]}</button>`;
         }
     }
@@ -228,7 +350,6 @@ socket.on('iniciar_juego_impostor', (datos) => {
     document.body.style.backgroundColor = "var(--fondo-oscuro)";
 });
 
-// 🚨 MEJORA: Escuchamos si alguien huye para tachar su botón
 socket.on('jugador_fugitivo', (idFugitivo) => {
     if (!jugadorRegistrado) return;
     
@@ -244,18 +365,19 @@ socket.on('jugador_fugitivo', (idFugitivo) => {
 });
 
 function enviarVoto(idVotado) {
+    reproducirSonido('voto');
     socket.emit('votar_impostor', idVotado);
     document.getElementById('zona-votacion').innerHTML = "<h3>Voto registrado.</h3><p>Esperando al resto...</p>";
 }
 
 socket.on('actualizar_conteo_votos', (datosVotos) => {
-    if (!jugadorRegistrado) return; // Ignora si está en login
+    if (!jugadorRegistrado) return;
     const estado = document.getElementById('estado-votos');
     if (estado) estado.innerText = `Esperando votos... (${datosVotos.actuales}/${datosVotos.total})`;
 });
 
 socket.on('fin_juego_impostor', (resultados) => {
-    if (!jugadorRegistrado) return; // Ignora si está en login
+    if (!jugadorRegistrado) return;
     const zonaJuego = document.getElementById('pantalla-juego');
     const miNombre = document.getElementById('nombreInput').value;
     
@@ -267,6 +389,13 @@ socket.on('fin_juego_impostor', (resultados) => {
     const colorBorde = esPerdedor ? 'white' : (esEmpate ? '#a5a5b4' : '#ff4757');
     const colorTexto = esPerdedor ? 'white' : (esEmpate ? '#a5a5b4' : '#ff4757');
     const tituloTarjeta = esEmpate ? "RESULTADO:" : "EXPULSADO:";
+
+    // Sonido según resultado
+    if (esPerdedor) {
+        reproducirSonido('derrota');
+    } else if (!esEmpate) {
+        reproducirSonido('victoria');
+    }
 
     zonaJuego.innerHTML = `
         <h1 style="color: ${esPerdedor ? 'white' : '#8e44ad'};">${resultados.titulo}</h1>
