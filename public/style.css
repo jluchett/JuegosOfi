@@ -1,0 +1,87 @@
+:root {
+    --fondo-oscuro: #1e1e2f;
+    --fondo-tarjeta: #2a2a40;
+    --texto-principal: #ffffff;
+    --texto-secundario: #a5a5b4;
+    --color-acento: #ff4757; 
+    --color-acento-hover: #ff6b81;
+    --color-exito: #2ed573;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--fondo-oscuro);
+    color: var(--texto-principal);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    text-align: center;
+    transition: background-color 0.5s;
+}
+
+#pantalla-login, #pantalla-lobby, #pantalla-juego {
+    background-color: var(--fondo-tarjeta);
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 500px;
+    animation: aparecer 0.5s ease-out;
+}
+
+h1 { font-size: 24px; margin-bottom: 20px; color: var(--color-acento); text-transform: uppercase; letter-spacing: 2px; }
+h2 { font-size: 20px; margin-bottom: 15px; color: var(--texto-secundario); }
+h3 { color: var(--texto-principal); margin-bottom: 15px; }
+
+input[type="text"] {
+    width: 100%; padding: 15px; margin-bottom: 20px; border: 2px solid #3d3d5c;
+    border-radius: 8px; background-color: #1e1e2f; color: white; font-size: 16px; outline: none;
+}
+input[type="text"]:focus { border-color: var(--color-acento); }
+
+button {
+    width: 100%; padding: 15px; border: none; border-radius: 8px;
+    background-color: var(--color-acento); color: white; font-size: 18px;
+    font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase;
+}
+button:hover { filter: brightness(1.1); transform: translateY(-2px); }
+button:active { transform: translateY(1px); }
+
+#lista-jugadores { list-style-type: none; margin-bottom: 25px; text-align: left; }
+#lista-jugadores li {
+    background-color: #1e1e2f; margin: 8px 0; padding: 12px 20px;
+    border-radius: 8px; border-left: 4px solid var(--color-exito); font-size: 18px;
+}
+
+@keyframes aparecer {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* JUEGO 2: SEMAFORO */
+#caja-semaforo {
+    width: 250px; height: 250px; margin: 30px auto; border-radius: 20px;
+    background-color: var(--color-acento); display: flex; justify-content: center;
+    align-items: center; font-size: 28px; font-weight: bold; cursor: pointer;
+    box-shadow: 0 0 30px rgba(255, 71, 87, 0.5); user-select: none;
+}
+#caja-semaforo:active { transform: scale(0.95); }
+.semaforo-verde { background-color: var(--color-exito) !important; box-shadow: 0 0 50px rgba(46, 213, 115, 0.8) !important; }
+
+/* JUEGO 3: IMPOSTOR */
+.tarjeta-rol {
+    background-color: #1e1e2f; padding: 20px; border-radius: 12px;
+    border: 2px dashed #a5a5b4; margin: 20px 0;
+}
+.palabra-secreta { font-size: 36px; color: var(--color-exito); font-weight: bold; margin: 10px 0; text-transform: uppercase; }
+.palabra-impostor { font-size: 36px; color: var(--color-acento); font-weight: bold; margin: 10px 0; text-transform: uppercase;}
+.btn-voto { background-color: #3d3d5c; margin-bottom: 10px; border-left: 5px solid transparent; text-transform: none; font-size: 16px;}
+.btn-voto:hover { background-color: #4b4b70; border-left: 5px solid var(--color-acento); }
+.esperando-votos { color: #f39c12; font-style: italic; margin-top: 20px; }

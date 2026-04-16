@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torneo de la Oficina</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="pantalla-login">
+        <h1>Juegos del Hambre: Edición Oficina</h1>
+        <input type="text" id="nombreInput" placeholder="Tu nombre...">
+        <button onclick="unirse()">Entrar</button>
+    </div>
+
+    <div id="pantalla-lobby" style="display: none;">
+        <h2>Sala de Espera</h2>
+        <ul id="lista-jugadores"></ul>
+        
+        <p id="mensaje-espera" style="color: #f39c12; font-style: italic; margin-top: 20px;">
+            Esperando jugadores (Mínimo 3 para iniciar un juego)...
+        </p>
+
+        <div id="panel-control" style="display: none; margin-top: 30px;">
+            <h3>Seleccionar Minijuego:</h3>
+            <button onclick="lanzarBomba()" style="margin-bottom: 15px;">💣 Jugar: La Bomba de Tiempo</button>
+            <button onclick="lanzarSemaforo()" style="margin-bottom: 15px; background-color: #e1b12c;">🚦 Jugar: El Semáforo</button>
+            <button onclick="lanzarImpostor()" style="margin-bottom: 15px; background-color: #8e44ad;">🕵️ Jugar: El Impostor</button>
+        </div>
+    </div>
+
+    <div id="pantalla-juego" style="display: none;"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
