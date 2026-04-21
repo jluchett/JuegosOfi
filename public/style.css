@@ -6,6 +6,7 @@
     --color-acento: #ff4757; 
     --color-acento-hover: #ff6b81;
     --color-exito: #2ed573;
+    --color-oro: #f39c12;
 }
 
 * {
@@ -58,6 +59,62 @@ button:active { transform: translateY(1px); }
 #lista-jugadores li {
     background-color: #1e1e2f; margin: 8px 0; padding: 12px 20px;
     border-radius: 8px; border-left: 4px solid var(--color-exito); font-size: 18px;
+}
+
+/* 🏆 ESTILOS PARA EL RANKING */
+#panel-ranking {
+    background: linear-gradient(135deg, #2a2a40 0%, #1e1e2f 100%);
+    padding: 15px;
+    border-radius: 12px;
+    border: 2px solid var(--color-oro);
+    margin-bottom: 20px;
+}
+
+#panel-ranking h3 {
+    color: var(--color-oro);
+    margin-bottom: 10px;
+}
+
+#lista-ranking {
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+#lista-ranking::-webkit-scrollbar {
+    width: 6px;
+}
+
+#lista-ranking::-webkit-scrollbar-track {
+    background: #1e1e2f;
+    border-radius: 10px;
+}
+
+#lista-ranking::-webkit-scrollbar-thumb {
+    background: var(--color-oro);
+    border-radius: 10px;
+}
+
+.ranking-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: #1e1e2f;
+    margin-bottom: 5px;
+    border-radius: 8px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes aparecer {

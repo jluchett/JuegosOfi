@@ -1,3 +1,6 @@
 node_modules
 tareas.txt
 dist
+# Logs
+logs
+*.log

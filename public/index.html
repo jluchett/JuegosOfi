@@ -38,6 +38,9 @@
     <audio id="sonido-clic" preload="auto">
         <source src="/sounds/click.mp3" type="audio/mpeg">
     </audio>
+    <audio id="sonido-puntos" preload="auto">
+        <source src="/sounds/puntos.mp3" type="audio/mpeg">
+    </audio>
 
     <div id="pantalla-login">
         <h1>Juegos del Hambre: Edición Oficina</h1>
@@ -47,6 +50,20 @@
 
     <div id="pantalla-lobby" style="display: none;">
         <h2>Sala de Espera</h2>
+        
+        <!-- 🏆 PANEL DE RANKING EN EL LOBBY -->
+        <div id="panel-ranking" style="margin-bottom: 20px;">
+            <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                🏆 Ranking de la Oficina
+                <button onclick="resetearPuntuaciones()" style="width: auto; padding: 5px 10px; font-size: 12px; background-color: #3d3d5c;">
+                    🔄 Reset
+                </button>
+            </h3>
+            <div id="lista-ranking" style="max-height: 200px; overflow-y: auto;">
+                <!-- Ranking se llenará dinámicamente -->
+            </div>
+        </div>
+        
         <ul id="lista-jugadores"></ul>
         
         <p id="mensaje-espera" style="color: #f39c12; font-style: italic; margin-top: 20px;">
@@ -58,6 +75,8 @@
             <button onclick="lanzarBomba()" style="margin-bottom: 15px;">💣 Jugar: La Bomba de Tiempo</button>
             <button onclick="lanzarSemaforo()" style="margin-bottom: 15px; background-color: #e1b12c;">🚦 Jugar: El Semáforo</button>
             <button onclick="lanzarImpostor()" style="margin-bottom: 15px; background-color: #8e44ad;">🕵️ Jugar: El Impostor</button>
+            <!-- Agregar dentro del div#panel-control, después del botón de Impostor -->
+            <button onclick="lanzarExpediente()" style="margin-bottom: 15px; background-color: #9b59b6;">🗂️ Jugar: Encuentra el Expediente</button>
             
             <!-- Control de volumen -->
             <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #3d3d5c;">

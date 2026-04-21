@@ -11,7 +11,8 @@ const sonidos = {
     victoria: document.getElementById('sonido-victoria'),
     derrota: document.getElementById('sonido-derrota'),
     voto: document.getElementById('sonido-voto'),
-    clic: document.getElementById('sonido-clic')
+    clic: document.getElementById('sonido-clic'),
+    puntos: document.getElementById('sonido-puntos')
 };
 
 let volumenGlobal = 0.5;
@@ -51,7 +52,6 @@ function detenerSonido(tipo) {
     }
 }
 
-// 🎵 NUEVA FUNCIÓN: Reproducir en bucle
 function reproducirSonidoLoop(tipo, volumenPersonalizado = 1) {
     if (muteado) return;
     const sonido = sonidos[tipo];
@@ -63,7 +63,6 @@ function reproducirSonidoLoop(tipo, volumenPersonalizado = 1) {
     }
 }
 
-// 🎵 NUEVA FUNCIÓN: Detener bucle
 function detenerSonidoLoop(tipo) {
     const sonido = sonidos[tipo];
     if (sonido) {
@@ -77,6 +76,52 @@ function detenerSonidoLoop(tipo) {
 setTimeout(() => {
     Object.values(sonidos).forEach(s => { if (s) s.volume = volumenGlobal; });
 }, 100);
+
+// 🏆 FUNCIÓN PARA ACTUALIZAR RANKING
+function actualizarRanking(ranking) {
+    const listaRanking = document.getElementById('lista-ranking');
+    if (!listaRanking) return;
+    
+    if (ranking.length === 0) {
+        listaRanking.innerHTML = '<p style="color: #a5a5b4; text-align: center; padding: 10px;">Aún no hay puntuaciones</p>';
+        return;
+    }
+    
+    listaRanking.innerHTML = ranking.map((item, index) => {
+        let medalla = '';
+        if (index === 0) medalla = '🥇';
+        else if (index === 1) medalla = '🥈';
+        else if (index === 2) medalla = '🥉';
+        else medalla = `${index + 1}.`;
+        
+        const colorPuntos = item.puntos >= 0 ? '#2ed573' : '#ff4757';
+        
+        return `
+            <div style="display: flex; justify-content: space-between; align-items: center; 
+                        padding: 8px; background-color: #1e1e2f; margin-bottom: 5px; border-radius: 8px;
+                        border-left: 4px solid ${index < 3 ? '#f39c12' : '#3d3d5c'};">
+                <span style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 18px;">${medalla}</span>
+                    <span style="font-weight: ${index < 3 ? 'bold' : 'normal'};">${item.nombre}</span>
+                </span>
+                <span style="color: ${colorPuntos}; font-weight: bold; font-size: 18px;">${item.puntos}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// 🏆 Función para resetear puntuaciones
+function resetearPuntuaciones() {
+    if (confirm('¿Resetear todas las puntuaciones?')) {
+        socket.emit('resetear_puntuaciones');
+        reproducirSonido('clic');
+    }
+}
+
+// Escuchar actualizaciones de ranking
+socket.on('actualizar_ranking', (ranking) => {
+    actualizarRanking(ranking);
+});
 
 // ESTA ES LA CLAVE: El candado que protege la pantalla de login
 let jugadorRegistrado = false;
@@ -95,6 +140,11 @@ socket.on('ingreso_exitoso', (estado) => {
     jugadorRegistrado = true;
     reproducirSonido('union');
     document.getElementById('pantalla-login').style.display = 'none';
+    
+    // Actualizar ranking inicial
+    if (estado.ranking) {
+        actualizarRanking(estado.ranking);
+    }
     
     if (estado.juegoEnCurso) {
         const zonaJuego = document.getElementById('pantalla-juego');
@@ -130,18 +180,17 @@ socket.on('actualizar_lobby', (nombres) => {
 // Manejo dinámico de la sala (Mínimo 3 jugadores)
 socket.on('sala_lista', () => {
     if (!jugadorRegistrado) return;
-    // Detener cualquier reproducción anterior
+    
     detenerSonidoLoop('salalista');
-    // Iniciar reproducción en bucle
     reproducirSonidoLoop('salalista');
+    
     document.getElementById('panel-control').style.display = 'block';
     document.getElementById('mensaje-espera').style.display = 'none';
 });
 
 socket.on('sala_espera', () => {
     if (!jugadorRegistrado) return;
-
-     // 🎵 DETENER EL BUCLE cuando la sala ya no está lista
+    
     detenerSonidoLoop('salalista');
     
     document.getElementById('panel-control').style.display = 'none';
@@ -186,6 +235,7 @@ socket.on('error_juego', (mensaje) => {
 
 socket.on('mostrar_lobby', () => {
     if (!jugadorRegistrado) return;
+    
     document.getElementById('pantalla-juego').style.display = 'none';
     document.getElementById('pantalla-juego').innerHTML = ''; 
     document.getElementById('pantalla-lobby').style.display = 'block';
@@ -201,6 +251,7 @@ let intervaloBomba;
 
 socket.on('iniciar_juego_bomba', () => {
     if (!jugadorRegistrado) return;
+    
     reproducirSonido('inicioJuego');
     
     document.getElementById('pantalla-lobby').style.display = 'none';
@@ -216,7 +267,6 @@ socket.on('iniciar_juego_bomba', () => {
         <p style="color: #a5a5b4;">Alguien será elegido al azar...</p>
     `;
 
-    // Sonido de tick inicial
     reproducirSonido('bombaTick', 0.6);
 
     intervaloBomba = setInterval(() => {
@@ -228,7 +278,6 @@ socket.on('iniciar_juego_bomba', () => {
             setTimeout(() => contElement.style.transform = 'scale(1)', 150);
         }
         
-        // Sonido de tick en cada segundo
         if (contador > 0) {
             reproducirSonido('bombaTick', 0.6);
         }
@@ -240,29 +289,45 @@ socket.on('iniciar_juego_bomba', () => {
     }, 1000);
 });
 
-socket.on('fin_juego_bomba', (nombrePerdedor) => {
+socket.on('fin_juego_bomba', (datos) => {
     if (!jugadorRegistrado) return;
     clearInterval(intervaloBomba);
     detenerSonido('bombaTick');
     reproducirSonido('explosion');
     
+    // Actualizar ranking
+    if (datos.puntuaciones) {
+        actualizarRanking(datos.puntuaciones);
+    }
+    
     const zonaJuego = document.getElementById('pantalla-juego');
     const miNombre = document.getElementById('nombreInput').value;
 
-    if (miNombre === nombrePerdedor) {
-        zonaJuego.innerHTML = `<h1 style="color: #ff4757; font-size: 50px;">¡BOOOM!</h1><h2>¡Explotaste, ${nombrePerdedor}!</h2>`;
+    if (miNombre === datos.perdedor) {
+        zonaJuego.innerHTML = `
+            <h1 style="color: #ff4757; font-size: 50px;">¡BOOOM!</h1>
+            <h2>¡Explotaste, ${datos.perdedor}!</h2>
+            <p style="color: #ff4757; margin-top: 20px;">-30 puntos 😭</p>
+        `;
         document.body.style.backgroundColor = "#ff4757"; 
         reproducirSonido('derrota');
     } else {
-        zonaJuego.innerHTML = `<h1 style="color: #2ed573;">¡Te salvaste!</h1><h2>Explotó: <span style="color:#ff4757;">${nombrePerdedor}</span></h2>`;
+        zonaJuego.innerHTML = `
+            <h1 style="color: #2ed573;">¡Te salvaste!</h1>
+            <h2>Explotó: <span style="color:#ff4757;">${datos.perdedor}</span></h2>
+            <p style="color: #2ed573; margin-top: 20px;">+50 puntos 🎉</p>
+        `;
         reproducirSonido('victoria');
     }
+    
+    // reproducirSonido('puntos');
     setTimeout(() => zonaJuego.innerHTML += generarBotonVolver(), 3000);
 });
 
 // --- JUEGO 2: EL SEMÁFORO ---
 socket.on('preparar_semaforo', () => {
     if (!jugadorRegistrado) return;
+
     reproducirSonido('inicioJuego');
     
     document.getElementById('pantalla-lobby').style.display = 'none';
@@ -299,23 +364,42 @@ function presionarSemaforo() {
 
 socket.on('fin_juego_semaforo', (datos) => {
     if (!jugadorRegistrado) return;
+    
+    // Actualizar ranking
+    if (datos.puntuaciones) {
+        actualizarRanking(datos.puntuaciones);
+    }
+    
     const zonaJuego = document.getElementById('pantalla-juego');
     const miNombre = document.getElementById('nombreInput').value;
 
     if (miNombre === datos.perdedor) {
-        zonaJuego.innerHTML = `<h1 style="color: #ff4757; font-size: 50px;">¡FUISTE EL MÁS LENTO!</h1><h2>Tiempo: ${datos.tiempo}</h2>`;
+        const puntosPerdidos = datos.tiempo.includes("ANTES") ? "-50 puntos 😱" : "-20 puntos 😓";
+        zonaJuego.innerHTML = `
+            <h1 style="color: #ff4757; font-size: 50px;">¡FUISTE EL MÁS LENTO!</h1>
+            <h2>Tiempo: ${datos.tiempo}</h2>
+            <p style="color: #ff4757; margin-top: 20px;">${puntosPerdidos}</p>
+        `;
         document.body.style.backgroundColor = "#ff4757"; 
         reproducirSonido('derrota');
     } else {
-        zonaJuego.innerHTML = `<h1 style="color: #2ed573;">¡Qué reflejos!</h1><h2>Perdedor: <span style="color:#ff4757;">${datos.perdedor}</span></h2><p>Tiempo: ${datos.tiempo}</p>`;
+        zonaJuego.innerHTML = `
+            <h1 style="color: #2ed573;">¡Qué reflejos!</h1>
+            <h2>Perdedor: <span style="color:#ff4757;">${datos.perdedor}</span></h2>
+            <p>Tiempo: ${datos.tiempo}</p>
+            <p style="color: #2ed573; margin-top: 20px;">+40 puntos 🎉</p>
+        `;
         reproducirSonido('victoria');
     }
+    
+    // reproducirSonido('puntos');
     setTimeout(() => zonaJuego.innerHTML += generarBotonVolver(), 3000);
 });
 
 // --- JUEGO 3: EL IMPOSTOR ---
 socket.on('iniciar_juego_impostor', (datos) => {
     if (!jugadorRegistrado) return;
+
     reproducirSonido('inicioJuego');
 
     document.getElementById('pantalla-lobby').style.display = 'none';
@@ -378,11 +462,18 @@ socket.on('actualizar_conteo_votos', (datosVotos) => {
 
 socket.on('fin_juego_impostor', (resultados) => {
     if (!jugadorRegistrado) return;
+    
+    // Actualizar ranking
+    if (resultados.puntuaciones) {
+        actualizarRanking(resultados.puntuaciones);
+    }
+    
     const zonaJuego = document.getElementById('pantalla-juego');
     const miNombre = document.getElementById('nombreInput').value;
     
     const esEmpate = (resultados.nombrePerdedor === "Empate");
     const esPerdedor = (miNombre === resultados.nombrePerdedor && !esEmpate);
+    const soyImpostor = (miNombre === resultados.nombreImpostor);
 
     document.body.style.backgroundColor = esPerdedor ? "#ff4757" : "var(--fondo-oscuro)";
 
@@ -390,7 +481,20 @@ socket.on('fin_juego_impostor', (resultados) => {
     const colorTexto = esPerdedor ? 'white' : (esEmpate ? '#a5a5b4' : '#ff4757');
     const tituloTarjeta = esEmpate ? "RESULTADO:" : "EXPULSADO:";
 
-    // Sonido según resultado
+    // Determinar puntos ganados/perdidos
+    let mensajePuntos = '';
+    if (!esEmpate) {
+        if (soyImpostor) {
+            mensajePuntos = resultados.titulo.includes("ENGAÑÓ") ? 
+                '<p style="color: #2ed573; margin-top: 20px;">+100 puntos 🏆</p>' : 
+                '<p style="color: #ff4757; margin-top: 20px;">-50 puntos 😓</p>';
+        } else {
+            mensajePuntos = resultados.titulo.includes("OFICINA") ? 
+                '<p style="color: #2ed573; margin-top: 20px;">+60 puntos 🎉</p>' : 
+                '<p style="color: #ff4757; margin-top: 20px;">-20 puntos 😓</p>';
+        }
+    }
+
     if (esPerdedor) {
         reproducirSonido('derrota');
     } else if (!esEmpate) {
@@ -404,6 +508,9 @@ socket.on('fin_juego_impostor', (resultados) => {
             <h3>${tituloTarjeta}</h3>
             <p style="font-size: 30px; font-weight: bold; color: ${colorTexto};">${resultados.nombrePerdedor}</p>
         </div>
+        ${mensajePuntos}
     `;
+    
+    // reproducirSonido('puntos');
     setTimeout(() => zonaJuego.innerHTML += generarBotonVolver(), 4000);
 });
